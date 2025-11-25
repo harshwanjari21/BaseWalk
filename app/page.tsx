@@ -5,16 +5,6 @@ import { StepsDisplay } from '@/components/steps-display';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Activity, CheckCircle, XCircle } from 'lucide-react';
 
-// Declare Farcaster SDK for TypeScript
-declare global {
-  interface Window {
-    fc?: {
-      createClient: () => any;
-    };
-    farcasterSdk?: any;
-  }
-}
-
 export default function HomePage() {
     const [isLoading, setIsLoading] = useState(true);
     const [userId, setUserId] = useState<string>('');
@@ -22,88 +12,40 @@ export default function HomePage() {
     const [userInfo, setUserInfo] = useState<any>(null);
 
     useEffect(() => {
-        const initializeFarcaster = async () => {
-            console.log('Initializing Farcaster SDK...');
+        const initializeApp = async () => {
+            console.log('Initializing BaseWalk app...');
             try {
-                // Wait for SDK to be available
-                let attempts = 0;
-                while (!window.fc && !window.farcasterSdk && attempts < 50) {
-                    await new Promise(resolve => setTimeout(resolve, 100));
-                    attempts++;
-                }
+                // For now, use a simple guest user approach
+                // In Farcaster context, this will be enhanced to get actual user data
+                const guestUserId = `guest_${Date.now()}`;
+                setUserId(guestUserId);
                 
-                if (window.fc && typeof window.fc.createClient === 'function') {
-                    // Use official Farcaster Connect SDK
-                    const client = window.fc.createClient();
-                    
-                    // Call ready to hide splash screen
-                    if (client && typeof client.ready === 'function') {
-                        await client.ready();
-                        console.log('Farcaster client ready called successfully');
-                    }
-                    
-                    // Get user context if available
-                    if (client && typeof client.context === 'function') {
-                        const context = await client.context();
-                        
-                        let userFid = null;
-                        let userData = null;
-                        
-                        if (context && context.user && context.user.fid) {
-                            userFid = context.user.fid;
-                            userData = {
-                                fid: userFid,
-                                username: context.user.username || 'Anonymous',
-                                displayName: context.user.displayName || 'User',
-                                pfpUrl: context.user.pfpUrl || null
-                            };
-                        }
-                        
-                        // Set local state
-                        setUserInfo(userData);
-                        setUserId(userFid ? `farcaster_${userFid}` : `guest_${Date.now()}`);
-                        
-                        console.log('Farcaster user:', userData);
-                    } else {
-                        setUserId(`guest_${Date.now()}`);
-                    }
-                } else if (window.farcasterSdk) {
-                    // Fallback to legacy SDK approach
-                    await window.farcasterSdk.actions.ready({ disableNativeGestures: true });
-                    console.log('Legacy Farcaster SDK ready called successfully');
-                    
-                    const context = await window.farcasterSdk.context;
-                    
-                    let userFid = null;
-                    let userData = null;
-                    
-                    if (context && context.user && context.user.fid) {
-                        userFid = context.user.fid;
-                        userData = {
-                            fid: userFid,
-                            username: context.user.username || 'Anonymous',
-                            displayName: context.user.displayName || 'User',
-                            pfpUrl: context.user.pfpUrl || null
-                        };
-                    }
-                    
-                    setUserInfo(userData);
-                    setUserId(userFid ? `farcaster_${userFid}` : `guest_${Date.now()}`);
-                    
-                    console.log('Legacy Farcaster user:', userData);
+                // Check for URL parameters that might indicate Farcaster context
+                const params = new URLSearchParams(window.location.search);
+                const fid = params.get('fid');
+                const username = params.get('username');
+                
+                if (fid && username) {
+                    setUserInfo({
+                        fid: parseInt(fid),
+                        username: username,
+                        displayName: username,
+                        pfpUrl: null
+                    });
+                    setUserId(`farcaster_${fid}`);
+                    console.log('Farcaster user detected from URL params:', { fid, username });
                 } else {
-                    console.warn('Farcaster SDK not available - guest mode');
-                    setUserId(`guest_${Date.now()}`);
+                    console.log('Running in guest mode');
                 }
             } catch (error) {
-                console.error('Farcaster initialization error:', error);
+                console.error('App initialization error:', error);
                 setUserId(`guest_${Date.now()}`);
             } finally {
                 setIsLoading(false);
             }
         };
 
-        initializeFarcaster();
+        initializeApp();
     }, []);
 
     useEffect(() => {
@@ -111,6 +53,7 @@ export default function HomePage() {
             checkConnectionStatus();
         }
     }, [userId]);
+
     const checkConnectionStatus = async () => {
         try {
             const response = await fetch(`/api/fitbit/status?userId=${userId}`);

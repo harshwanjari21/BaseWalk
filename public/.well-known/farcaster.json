@@ -19,7 +19,7 @@
     "tags": ["fitbit", "health", "steps", "fitness", "tracking"],
     "tagline": "Track your steps with Fitbit!",
     "ogTitle": "BaseWalk - Fitbit Step Tracker",
-    "ogDescription": "Connect your Fitbit to track daily steps in Farcaster. Sync automatically and see your fitness progress.",
+    "ogDescription": "Connect Fitbit to track daily steps in Farcaster. Auto-sync every 3 hours.",
     "ogImageUrl": "https://base-walk.vercel.app/basewalk-banner.png",
     "heroImageUrl": "https://base-walk.vercel.app/basewalk-banner.png"
   },

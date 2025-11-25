@@ -8,12 +8,6 @@ export default function RootLayout({
 }>) {
   return (
         <html lang="en">
-          <head>
-            <script
-              src="https://connect.farcaster.xyz/sdk.js"
-              async
-            />
-          </head>
           <body className="font-sans antialiased">
             {children}
           </body>
