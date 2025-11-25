@@ -9,10 +9,13 @@ export default function RootLayout({
   return (
         <html lang="en">
           <head>
-            {/* Load Farcaster SDK */}
+            {/* Load Farcaster SDK - Updated for better compatibility */}
+            <script>
+              window.farcasterSdkLoaded = false;
+            </script>
             <script
-              async
-              src="https://esm.sh/@farcaster/miniapp-sdk@0.2.1/dist/farcaster.js"
+              src="https://unpkg.com/@farcaster/miniapp-sdk@0.2.1/dist/farcaster.js"
+              onLoad="window.farcasterSdkLoaded = true;"
             />
           </head>
           <body className="font-sans antialiased">

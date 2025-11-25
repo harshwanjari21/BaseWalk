@@ -9,6 +9,7 @@ import { Activity, CheckCircle, XCircle } from 'lucide-react';
 declare global {
   interface Window {
     farcasterSdk: any;
+    farcasterSdkLoaded: boolean;
     userFid: number | null;
     userInfo: any;
     isFarcasterUser: boolean;
@@ -26,15 +27,17 @@ export default function HomePage() {
         const initializeFarcaster = async () => {
             console.log('Initializing Farcaster Mini App SDK:', new Date());
             try {
-                // Wait for SDK to be available
+                // Wait for SDK to be available with better detection
                 let attempts = 0;
-                while (!window.farcasterSdk && attempts < 50) {
+                while ((!window.farcasterSdk || !window.farcasterSdkLoaded) && attempts < 100) {
                     await new Promise(resolve => setTimeout(resolve, 100));
                     attempts++;
                 }
                 
-                if (window.farcasterSdk) {
-                    // Initialize the SDK and call ready
+                if (window.farcasterSdk && window.farcasterSdk.actions) {
+                    console.log('Farcaster SDK found, initializing...');
+                    
+                    // Initialize the SDK and call ready - using food-mines pattern
                     await window.farcasterSdk.actions.ready({ disableNativeGestures: true });
                     console.log('Farcaster SDK ready() called successfully');
                     
@@ -42,6 +45,7 @@ export default function HomePage() {
                     const splash = document.getElementById('splash-screen');
                     if (splash) {
                         splash.style.display = 'none';
+                        console.log('Splash screen hidden');
                     }
                     
                     // Get user context
