@@ -27,7 +27,7 @@ export default function HomePage() {
         const initializeFarcaster = async () => {
             console.log('Initializing Farcaster Mini App SDK:', new Date());
             try {
-                // Wait for SDK to be available with better detection
+                // Wait for SDK to be available - using official method
                 let attempts = 0;
                 while ((!window.farcasterSdk || !window.farcasterSdkLoaded) && attempts < 100) {
                     await new Promise(resolve => setTimeout(resolve, 100));
@@ -35,10 +35,10 @@ export default function HomePage() {
                 }
                 
                 if (window.farcasterSdk && window.farcasterSdk.actions) {
-                    console.log('Farcaster SDK found, initializing...');
+                    console.log('Farcaster SDK found, calling ready()...');
                     
-                    // Initialize the SDK and call ready - using food-mines pattern
-                    await window.farcasterSdk.actions.ready({ disableNativeGestures: true });
+                    // Call ready() using the official SDK method
+                    await window.farcasterSdk.actions.ready();
                     console.log('Farcaster SDK ready() called successfully');
                     
                     // Hide splash screen after SDK is ready
