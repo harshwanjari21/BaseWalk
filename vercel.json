@@ -1,9 +1,11 @@
 {
-  "name": "fitbit-farcaster-mini-app",
-  "version": "1.0.0",
-  "scripts": {
-    "build": "next build",
-    "start": "next start",
-    "postinstall": "prisma generate"
+  "buildCommand": "prisma generate && npm run build",
+  "env": {
+    "PRISMA_GENERATE_SKIP_DOWNLOAD": "true"
+  },
+  "functions": {
+    "app/api/**/*.ts": {
+      "maxDuration": 10
+    }
   }
 }
