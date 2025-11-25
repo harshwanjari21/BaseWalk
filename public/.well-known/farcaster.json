@@ -7,11 +7,11 @@
   "frame": {
     "version": "1",
     "name": "BaseWalk - Fitbit Step Tracker",
-    "iconUrl": "https://base-walk.vercel.app/fitbit-icon.png",
+    "iconUrl": "https://base-walk.vercel.app/basewalk-icon-200x200.png",
     "homeUrl": "https://base-walk.vercel.app",
     "imageUrl": "https://base-walk.vercel.app/basewalk-banner.png",
     "buttonTitle": "Track Steps",
-    "splashImageUrl": "https://base-walk.vercel.app/fitbit-icon.png",
+    "splashImageUrl": "https://base-walk.vercel.app/basewalk-icon-200x200.png",
     "splashBackgroundColor": "#1f2937",
     "subtitle": "Track steps with Fitbit",
     "description": "Connect your Fitbit account to track daily steps in Farcaster. Sync automatically every 3 hours and see your progress.",

@@ -38,6 +38,12 @@ export default function HomePage() {
                     await window.farcasterSdk.actions.ready({ disableNativeGestures: true });
                     console.log('Farcaster SDK ready() called successfully');
                     
+                    // Hide splash screen after SDK is ready
+                    const splash = document.getElementById('splash-screen');
+                    if (splash) {
+                        splash.style.display = 'none';
+                    }
+                    
                     // Get user context
                     const context = await window.farcasterSdk.context;
                     
@@ -101,6 +107,12 @@ export default function HomePage() {
                     window.isFarcasterUser = false;
                     window.isSessionOnly = true;
                     
+                    // Hide splash screen even if SDK not available
+                    const splash = document.getElementById('splash-screen');
+                    if (splash) {
+                        splash.style.display = 'none';
+                    }
+                    
                     // Fallback for non-Farcaster environment
                     setUserId(`guest_${Date.now()}`);
                 }
@@ -111,6 +123,12 @@ export default function HomePage() {
                 window.userInfo = null;
                 window.isFarcasterUser = false;
                 window.isSessionOnly = true;
+                
+                // Hide splash screen on error
+                const splash = document.getElementById('splash-screen');
+                if (splash) {
+                    splash.style.display = 'none';
+                }
                 
                 // Fallback for errors
                 setUserId(`guest_${Date.now()}`);
