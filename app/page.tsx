@@ -5,6 +5,17 @@ import { StepsDisplay } from '@/components/steps-display';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Activity, CheckCircle, XCircle } from 'lucide-react';
 
+// Global variables for SDK
+declare global {
+  interface Window {
+    farcasterSdk: any;
+    userFid: number | null;
+    userInfo: any;
+    isFarcasterUser: boolean;
+    isSessionOnly: boolean;
+  }
+}
+
 export default function HomePage() {
     const [isLoading, setIsLoading] = useState(true);
     const [userId, setUserId] = useState<string>('');
@@ -12,40 +23,103 @@ export default function HomePage() {
     const [userInfo, setUserInfo] = useState<any>(null);
 
     useEffect(() => {
-        const initializeApp = async () => {
-            console.log('Initializing BaseWalk app...');
+        const initializeFarcaster = async () => {
+            console.log('Initializing Farcaster Mini App SDK:', new Date());
             try {
-                // For now, use a simple guest user approach
-                // In Farcaster context, this will be enhanced to get actual user data
-                const guestUserId = `guest_${Date.now()}`;
-                setUserId(guestUserId);
-                
-                // Check for URL parameters that might indicate Farcaster context
-                const params = new URLSearchParams(window.location.search);
-                const fid = params.get('fid');
-                const username = params.get('username');
-                
-                if (fid && username) {
-                    setUserInfo({
-                        fid: parseInt(fid),
-                        username: username,
-                        displayName: username,
-                        pfpUrl: null
-                    });
-                    setUserId(`farcaster_${fid}`);
-                    console.log('Farcaster user detected from URL params:', { fid, username });
-                } else {
-                    console.log('Running in guest mode');
+                // Wait for SDK to be available
+                let attempts = 0;
+                while (!window.farcasterSdk && attempts < 50) {
+                    await new Promise(resolve => setTimeout(resolve, 100));
+                    attempts++;
                 }
+                
+                if (window.farcasterSdk) {
+                    // Initialize the SDK and call ready
+                    await window.farcasterSdk.actions.ready({ disableNativeGestures: true });
+                    console.log('Farcaster SDK ready() called successfully');
+                    
+                    // Get user context
+                    const context = await window.farcasterSdk.context;
+                    
+                    // Enhanced FID extraction with better error handling
+                    let userFid = null;
+                    let userData = null;
+                    
+                    try {
+                        if (context && context.user && context.user.fid) {
+                            const fidValue = context.user.fid;
+                            
+                            // Convert FID to number first, then to string for consistency
+                            if (typeof fidValue === 'number') {
+                                userFid = fidValue;
+                            } else if (typeof fidValue === 'string' && !isNaN(parseInt(fidValue))) {
+                                userFid = parseInt(fidValue);
+                            } else if (fidValue && typeof fidValue === 'object') {
+                                // Handle Proxy objects
+                                const numValue = Number(fidValue);
+                                if (!isNaN(numValue) && numValue > 0) {
+                                    userFid = numValue;
+                                }
+                            }
+                            
+                            // Store user info for display
+                            userData = {
+                                fid: userFid,
+                                username: context.user.username || 'Anonymous',
+                                displayName: context.user.displayName || 'User',
+                                pfpUrl: context.user.pfpUrl || null
+                            };
+                        }
+                    } catch (conversionError) {
+                        console.warn('Error extracting user FID:', conversionError);
+                    }
+                    
+                    // Store globally for other components
+                    window.userFid = userFid;
+                    window.userInfo = userData;
+                    
+                    // Set user type
+                    if (userFid && userFid > 0) {
+                        window.isFarcasterUser = true;
+                        window.isSessionOnly = false;
+                        console.log('Authenticated Farcaster User FID:', userFid);
+                        console.log('User Info:', userData);
+                    } else {
+                        window.isFarcasterUser = false;
+                        window.isSessionOnly = true;
+                        console.log('Running in Farcaster but no valid user - session only mode');
+                    }
+                    
+                    // Set local state
+                    setUserInfo(userData);
+                    setUserId(userFid ? `farcaster_${userFid}` : `guest_${Date.now()}`);
+                    
+                } else {
+                    console.warn('Farcaster SDK not available - running in demo mode for non-Farcaster users');
+                    window.userFid = null;
+                    window.userInfo = null;
+                    window.isFarcasterUser = false;
+                    window.isSessionOnly = true;
+                    
+                    // Fallback for non-Farcaster environment
+                    setUserId(`guest_${Date.now()}`);
+                }
+                
             } catch (error) {
-                console.error('App initialization error:', error);
+                console.error('Farcaster SDK initialization error:', error);
+                window.userFid = null;
+                window.userInfo = null;
+                window.isFarcasterUser = false;
+                window.isSessionOnly = true;
+                
+                // Fallback for errors
                 setUserId(`guest_${Date.now()}`);
             } finally {
                 setIsLoading(false);
             }
         };
 
-        initializeApp();
+        initializeFarcaster();
     }, []);
 
     useEffect(() => {

@@ -8,6 +8,13 @@ export default function RootLayout({
 }>) {
   return (
         <html lang="en">
+          <head>
+            {/* Load Farcaster SDK */}
+            <script
+              async
+              src="https://esm.sh/@farcaster/miniapp-sdk@0.2.1/dist/farcaster.js"
+            />
+          </head>
           <body className="font-sans antialiased">
             {children}
           </body>
