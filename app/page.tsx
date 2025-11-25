@@ -34,7 +34,7 @@ export default function HomePage() {
                 
                 if (window.fc && typeof window.fc.createClient === 'function') {
                     // Use official Farcaster Connect SDK
-                    const client = window.fc.createClient({});
+                    const client = window.fc.createClient();
                     
                     // Call ready to hide splash screen
                     if (client && typeof client.ready === 'function') {
