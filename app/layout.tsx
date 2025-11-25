@@ -10,7 +10,7 @@ export default function RootLayout({
         <html lang="en">
           <head>
             <script
-              src="https://sdk.farcaster.xyz/farcaster.js"
+              src="https://connect.farcaster.xyz/sdk.js"
               async
             />
           </head>

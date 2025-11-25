@@ -8,10 +8,10 @@ import { Activity, CheckCircle, XCircle } from 'lucide-react';
 // Declare Farcaster SDK for TypeScript
 declare global {
   interface Window {
-    farcasterSdk: any;
-    userFid: string | null;
-    userInfo: any;
-    isFarcasterUser: boolean;
+    fc?: {
+      createClient: () => any;
+    };
+    farcasterSdk?: any;
   }
 }
 
@@ -27,37 +27,58 @@ export default function HomePage() {
             try {
                 // Wait for SDK to be available
                 let attempts = 0;
-                while (!window.farcasterSdk && attempts < 50) {
+                while (!window.fc && !window.farcasterSdk && attempts < 50) {
                     await new Promise(resolve => setTimeout(resolve, 100));
                     attempts++;
                 }
                 
-                if (window.farcasterSdk) {
-                    // Call ready to hide splash screen
-                    await window.farcasterSdk.actions.ready({ disableNativeGestures: true });
-                    console.log('Farcaster SDK ready called successfully');
+                if (window.fc && typeof window.fc.createClient === 'function') {
+                    // Use official Farcaster Connect SDK
+                    const client = window.fc.createClient({});
                     
-                    // Get user context
+                    // Call ready to hide splash screen
+                    if (client && typeof client.ready === 'function') {
+                        await client.ready();
+                        console.log('Farcaster client ready called successfully');
+                    }
+                    
+                    // Get user context if available
+                    if (client && typeof client.context === 'function') {
+                        const context = await client.context();
+                        
+                        let userFid = null;
+                        let userData = null;
+                        
+                        if (context && context.user && context.user.fid) {
+                            userFid = context.user.fid;
+                            userData = {
+                                fid: userFid,
+                                username: context.user.username || 'Anonymous',
+                                displayName: context.user.displayName || 'User',
+                                pfpUrl: context.user.pfpUrl || null
+                            };
+                        }
+                        
+                        // Set local state
+                        setUserInfo(userData);
+                        setUserId(userFid ? `farcaster_${userFid}` : `guest_${Date.now()}`);
+                        
+                        console.log('Farcaster user:', userData);
+                    } else {
+                        setUserId(`guest_${Date.now()}`);
+                    }
+                } else if (window.farcasterSdk) {
+                    // Fallback to legacy SDK approach
+                    await window.farcasterSdk.actions.ready({ disableNativeGestures: true });
+                    console.log('Legacy Farcaster SDK ready called successfully');
+                    
                     const context = await window.farcasterSdk.context;
                     
                     let userFid = null;
                     let userData = null;
                     
                     if (context && context.user && context.user.fid) {
-                        const fidValue = context.user.fid;
-                        
-                        // Convert FID to number
-                        if (typeof fidValue === 'number') {
-                            userFid = fidValue;
-                        } else if (typeof fidValue === 'string' && !isNaN(parseInt(fidValue))) {
-                            userFid = parseInt(fidValue);
-                        } else if (fidValue && typeof fidValue === 'object') {
-                            const numValue = Number(fidValue);
-                            if (!isNaN(numValue) && numValue > 0) {
-                                userFid = numValue;
-                            }
-                        }
-                        
+                        userFid = context.user.fid;
                         userData = {
                             fid: userFid,
                             username: context.user.username || 'Anonymous',
@@ -66,25 +87,17 @@ export default function HomePage() {
                         };
                     }
                     
-                    // Store globally for other components
-                    window.userFid = userFid?.toString() || null;
-                    window.userInfo = userData;
-                    window.isFarcasterUser = !!userFid;
-                    
-                    // Set local state
                     setUserInfo(userData);
                     setUserId(userFid ? `farcaster_${userFid}` : `guest_${Date.now()}`);
                     
-                    console.log('Farcaster user:', userData);
+                    console.log('Legacy Farcaster user:', userData);
                 } else {
                     console.warn('Farcaster SDK not available - guest mode');
                     setUserId(`guest_${Date.now()}`);
-                    window.isFarcasterUser = false;
                 }
             } catch (error) {
                 console.error('Farcaster initialization error:', error);
                 setUserId(`guest_${Date.now()}`);
-                window.isFarcasterUser = false;
             } finally {
                 setIsLoading(false);
             }

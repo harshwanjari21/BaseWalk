@@ -83,24 +83,31 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
 
     console.log('Saving to database...');
 
-    // Store user data in database
-    await prisma.user.upsert({
-      where: { id: state },
-      update: {
-        fitbitUserId: user_id,
-        accessToken: encryptedAccessToken,
-        refreshToken: encryptedRefreshToken,
-        tokenExpiresAt: expiresAt,
-        updatedAt: new Date(),
-      },
-      create: {
-        id: state,
-        fitbitUserId: user_id,
-        accessToken: encryptedAccessToken,
-        refreshToken: encryptedRefreshToken,
-        tokenExpiresAt: expiresAt,
-      },
-    });
+    // Store user data in database with proper error handling
+    try {
+      await prisma.user.upsert({
+        where: { id: state },
+        update: {
+          fitbitUserId: user_id,
+          accessToken: encryptedAccessToken,
+          refreshToken: encryptedRefreshToken,
+          tokenExpiresAt: expiresAt,
+          updatedAt: new Date(),
+        },
+        create: {
+          id: state,
+          fitbitUserId: user_id,
+          accessToken: encryptedAccessToken,
+          refreshToken: encryptedRefreshToken,
+          tokenExpiresAt: expiresAt,
+        },
+      });
+    } catch (dbError) {
+      console.error('Database upsert error:', dbError);
+      return NextResponse.redirect(
+        new URL(`/?error=database_error&details=${encodeURIComponent('Failed to store user data')}`, request.url)
+      );
+    }
 
     console.log('Database save successful, redirecting...');
 
