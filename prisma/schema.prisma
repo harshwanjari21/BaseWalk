@@ -1,0 +1,38 @@
+// Prisma schema for Fitbit integration
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id              String      @id @default(cuid())
+  farcasterFid    String?     @unique
+  fitbitUserId    String?     @unique
+  accessToken     String?     @db.Text
+  refreshToken    String?     @db.Text
+  tokenExpiresAt  DateTime?
+  createdAt       DateTime    @default(now())
+  updatedAt       DateTime    @updatedAt
+  stepsData       StepsData[]
+  
+  @@index([farcasterFid])
+  @@index([fitbitUserId])
+}
+
+model StepsData {
+  id          String   @id @default(cuid())
+  userId      String
+  steps       Int
+  date        DateTime @db.Date
+  syncedAt    DateTime @default(now())
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  @@unique([userId, date])
+  @@index([userId])
+  @@index([date])
+}

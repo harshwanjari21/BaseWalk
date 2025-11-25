@@ -1,0 +1,9 @@
+{
+  "name": "fitbit-farcaster-mini-app",
+  "version": "1.0.0",
+  "scripts": {
+    "build": "next build",
+    "start": "next start",
+    "postinstall": "prisma generate"
+  }
+}

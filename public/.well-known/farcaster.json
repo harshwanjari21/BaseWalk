@@ -1,0 +1,26 @@
+{
+  "miniapp": {
+    "version": "1",
+    "name": "Fitbit Step Sync",
+    "iconUrl": "https://usdozf7pplhxfvrl.public.blob.vercel-storage.com/thumbnail_eeccf9d0-5aeb-4849-bc21-e7a1efe60fda-D7L9qrmEvXcCJ9P44voI46ZAIY1w78",
+    "homeUrl": "https://income-shout-016.app.ohara.ai",
+    "imageUrl": "https://usdozf7pplhxfvrl.public.blob.vercel-storage.com/thumbnail_eeccf9d0-5aeb-4849-bc21-e7a1efe60fda-D7L9qrmEvXcCJ9P44voI46ZAIY1w78",
+    "buttonTitle": "Open with Ohara",
+    "splashImageUrl": "https://usdozf7pplhxfvrl.public.blob.vercel-storage.com/farcaster/splash_images/splash_image1.svg",
+    "splashBackgroundColor": "#ffffff",
+    "tags": [
+      "ohara",
+      "mini-app",
+      "base",
+      "farcaster"
+    ],
+    "primaryCategory": "entertainment",
+    "ogTitle": "Fitbit Step Sync",
+    "ogImageUrl": "https://usdozf7pplhxfvrl.public.blob.vercel-storage.com/thumbnail_eeccf9d0-5aeb-4849-bc21-e7a1efe60fda-D7L9qrmEvXcCJ9P44voI46ZAIY1w78"
+  },
+  "baseBuilder": {
+    "allowedAddresses": [
+      ""
+    ]
+  }
+}
