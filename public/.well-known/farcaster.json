@@ -1,4 +1,9 @@
 {
+  "accountAssociation": {
+    "header": "eyJmaWQiOjI2ODY4MiwidHlwZSI6ImF1dGgiLCJrZXkiOiIweDg4YUY1RWExMjEyNzdGNTc2MzUwMzJEN2Y5YjIyN0QxNjBmNGU4ZjAifQ",
+    "payload": "eyJkb21haW4iOiJiYXNlLXdhbGsudmVyY2VsLmFwcCJ9",
+    "signature": "/WBDtWc+Rt1Pi3nnX+UsWHgQB5gDlERCFif7b/x40uBKUhXzrVcDhEODPuVWWe/WeiadLCcTHzwaRLG7hrVYwBw="
+  },
   "miniapp": {
     "version": "1",
     "name": "Fitbit Step Sync",
@@ -21,6 +26,7 @@
   "baseBuilder": {
     "allowedAddresses": [
       ""
+      
     ]
   }
 }
