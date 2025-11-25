@@ -27,7 +27,10 @@ export default function RootLayout({
                     onError={(e) => {
                       // Fallback to SVG icon if image fails
                       e.currentTarget.style.display = 'none';
-                      e.currentTarget.nextElementSibling.style.display = 'block';
+                      const sibling = e.currentTarget.nextElementSibling as HTMLElement;
+                      if (sibling) {
+                        sibling.style.display = 'block';
+                      }
                     }}
                   />
                   <div className="hidden w-16 h-16 text-white">
