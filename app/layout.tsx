@@ -24,20 +24,7 @@ export default function RootLayout({
                     src="/basewalk-icon-200x200.png" 
                     alt="BaseWalk" 
                     className="w-full h-full object-contain rounded-lg"
-                    onError={(e) => {
-                      // Fallback to SVG icon if image fails
-                      e.currentTarget.style.display = 'none';
-                      const sibling = e.currentTarget.nextElementSibling as HTMLElement;
-                      if (sibling) {
-                        sibling.style.display = 'block';
-                      }
-                    }}
                   />
-                  <div className="hidden w-16 h-16 text-white">
-                    <svg width="64" height="64" viewBox="0 0 24 24" fill="currentColor">
-                      <path d="M13.5 5.5c1.1 0 2-.9 2-2s-.9-2-2-2-2 .9-2 2 .9 2 2 2zM9.8 8.5L9 9.3c-1.5 1.5-1.5 3.9 0 5.4l.8.8c.4.4.4 1 0 1.4-.4.4-1 .4-1.4 0l-.8-.8c-2.3-2.3-2.3-6.1 0-8.4l.8-.8c.4-.4 1-.4 1.4 0 .4.4.4 1 0 1.4zm5.6 0c.4-.4 1-.4 1.4 0 .4.4.4 1 0 1.4l.8.8c2.3 2.3 2.3 6.1 0 8.4l-.8.8c-.4.4-1 .4-1.4 0-.4-.4-.4-1 0-1.4l.8-.8c1.5-1.5 1.5-3.9 0-5.4l-.8-.8c-.4-.4-.4-1 0-1.4z"/>
-                    </svg>
-                  </div>
                 </div>
                 <h1 className="text-2xl font-bold text-gray-900 mb-2">BaseWalk</h1>
                 <p className="text-gray-600 mb-6">Fitbit Step Tracker</p>
