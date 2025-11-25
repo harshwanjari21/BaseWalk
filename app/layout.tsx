@@ -10,13 +10,22 @@ export default function RootLayout({
         <html lang="en">
           <head>
             {/* Load Farcaster SDK - Updated for better compatibility */}
-            <script>
-              window.farcasterSdkLoaded = false;
-            </script>
-            <script
-              src="https://unpkg.com/@farcaster/miniapp-sdk@0.2.1/dist/farcaster.js"
-              onLoad="window.farcasterSdkLoaded = true;"
-            />
+            <script dangerouslySetInnerHTML={{
+              __html: `
+                window.farcasterSdkLoaded = false;
+                // Load Farcaster SDK
+                const script = document.createElement('script');
+                script.src = 'https://unpkg.com/@farcaster/miniapp-sdk@0.2.1/dist/farcaster.js';
+                script.onload = function() {
+                  window.farcasterSdkLoaded = true;
+                  console.log('Farcaster SDK loaded successfully');
+                };
+                script.onerror = function() {
+                  console.error('Failed to load Farcaster SDK');
+                };
+                document.head.appendChild(script);
+              `
+            }} />
           </head>
           <body className="font-sans antialiased">
             {/* Splash Screen */}
