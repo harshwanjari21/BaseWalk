@@ -4,203 +4,267 @@ import { FitbitConnectButton } from '@/components/fitbit-connect-button';
 import { StepsDisplay } from '@/components/steps-display';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Activity, CheckCircle, XCircle } from 'lucide-react';
-import { sdk } from "@farcaster/miniapp-sdk";
-import { useAddMiniApp } from "@/hooks/useAddMiniApp";
-import { useQuickAuth } from "@/hooks/useQuickAuth";
-import { useIsInFarcaster } from "@/hooks/useIsInFarcaster";
+
+// Declare Farcaster SDK for TypeScript
+declare global {
+  interface Window {
+    farcasterSdk: any;
+    userFid: string | null;
+    userInfo: any;
+    isFarcasterUser: boolean;
+  }
+}
 
 export default function HomePage() {
-    const { addMiniApp } = useAddMiniApp();
-    const isInFarcaster = useIsInFarcaster();
-    useQuickAuth(isInFarcaster);
+    const [isLoading, setIsLoading] = useState(true);
+    const [userId, setUserId] = useState<string>('');
+    const [connectionStatus, setConnectionStatus] = useState<'unknown' | 'connected' | 'disconnected'>('unknown');
+    const [userInfo, setUserInfo] = useState<any>(null);
+
     useEffect(() => {
-      const tryAddMiniApp = async () => {
-        try {
-          await addMiniApp()
-        } catch (error) {
-          console.error('Failed to add mini app:', error)
-        }
-
-      }
-
-    
-
-      tryAddMiniApp()
-    }, [addMiniApp])
-    useEffect(() => {
-      const initializeFarcaster = async () => {
-        try {
-          await new Promise(resolve => setTimeout(resolve, 100))
-          
-          if (document.readyState !== 'complete') {
-            await new Promise<void>(resolve => {
-              if (document.readyState === 'complete') {
-                resolve()
-              } else {
-                window.addEventListener('load', () => resolve(), { once: true })
-              }
-
-            })
-          }
-
-    
-
-          await sdk.actions.ready()
-          console.log('Farcaster SDK initialized successfully - app fully loaded')
-        } catch (error) {
-          console.error('Failed to initialize Farcaster SDK:', error)
-          
-          setTimeout(async () => {
+        const initializeFarcaster = async () => {
+            console.log('Initializing Farcaster SDK...');
             try {
-              await sdk.actions.ready()
-              console.log('Farcaster SDK initialized on retry')
-            } catch (retryError) {
-              console.error('Farcaster SDK retry failed:', retryError)
+                // Wait for SDK to be available
+                let attempts = 0;
+                while (!window.farcasterSdk && attempts < 50) {
+                    await new Promise(resolve => setTimeout(resolve, 100));
+                    attempts++;
+                }
+                
+                if (window.farcasterSdk) {
+                    // Call ready to hide splash screen
+                    await window.farcasterSdk.actions.ready({ disableNativeGestures: true });
+                    console.log('Farcaster SDK ready called successfully');
+                    
+                    // Get user context
+                    const context = await window.farcasterSdk.context;
+                    
+                    let userFid = null;
+                    let userData = null;
+                    
+                    if (context && context.user && context.user.fid) {
+                        const fidValue = context.user.fid;
+                        
+                        // Convert FID to number
+                        if (typeof fidValue === 'number') {
+                            userFid = fidValue;
+                        } else if (typeof fidValue === 'string' && !isNaN(parseInt(fidValue))) {
+                            userFid = parseInt(fidValue);
+                        } else if (fidValue && typeof fidValue === 'object') {
+                            const numValue = Number(fidValue);
+                            if (!isNaN(numValue) && numValue > 0) {
+                                userFid = numValue;
+                            }
+                        }
+                        
+                        userData = {
+                            fid: userFid,
+                            username: context.user.username || 'Anonymous',
+                            displayName: context.user.displayName || 'User',
+                            pfpUrl: context.user.pfpUrl || null
+                        };
+                    }
+                    
+                    // Store globally for other components
+                    window.userFid = userFid?.toString() || null;
+                    window.userInfo = userData;
+                    window.isFarcasterUser = !!userFid;
+                    
+                    // Set local state
+                    setUserInfo(userData);
+                    setUserId(userFid ? `farcaster_${userFid}` : `guest_${Date.now()}`);
+                    
+                    console.log('Farcaster user:', userData);
+                } else {
+                    console.warn('Farcaster SDK not available - guest mode');
+                    setUserId(`guest_${Date.now()}`);
+                    window.isFarcasterUser = false;
+                }
+            } catch (error) {
+                console.error('Farcaster initialization error:', error);
+                setUserId(`guest_${Date.now()}`);
+                window.isFarcasterUser = false;
+            } finally {
+                setIsLoading(false);
             }
+        };
 
-          }, 1000)
+        initializeFarcaster();
+    }, []);
+
+    useEffect(() => {
+        if (userId) {
+            checkConnectionStatus();
         }
-
-      }
-
-    
-
-      initializeFarcaster()
-    }, [])
-  const [userId, setUserId] = useState<string>('');
-  const [isConnected, setIsConnected] = useState<boolean>(false);
-  const [isLoading, setIsLoading] = useState<boolean>(true);
-  const [connectionMessage, setConnectionMessage] = useState<string>('');
-
-  useEffect(() => {
-    // Generate or retrieve user ID (in production, this would come from Farcaster auth)
-    const storedUserId = localStorage.getItem('userId');
-    if (storedUserId) {
-      setUserId(storedUserId);
-    } else {
-      const newUserId = `user_${Date.now()}_${Math.random().toString(36).substring(7)}`;
-      localStorage.setItem('userId', newUserId);
-      setUserId(newUserId);
-    }
-
-    // Check for connection status from URL params
-    const params = new URLSearchParams(window.location.search);
-    if (params.get('connected') === 'true') {
-      setConnectionMessage('Successfully connected to Fitbit!');
-      // Clean up URL
-      window.history.replaceState({}, '', '/');
-    } else if (params.get('error')) {
-      setConnectionMessage(`Connection failed: ${params.get('error')}`);
-      window.history.replaceState({}, '', '/');
-    }
-  }, []);
-
-  useEffect(() => {
-    const checkConnection = async (): Promise<void> => {
-      if (!userId) return;
-
-      try {
-        const response = await fetch(`/api/fitbit/status?userId=${userId}`);
-        if (response.ok) {
-          const data = await response.json();
-          setIsConnected(data.connected);
+    }, [userId]);
+    const checkConnectionStatus = async () => {
+        try {
+            const response = await fetch(`/api/fitbit/status?userId=${userId}`);
+            if (response.ok) {
+                const data = await response.json();
+                setConnectionStatus(data.connected ? 'connected' : 'disconnected');
+            }
+        } catch (error) {
+            console.error('Error checking connection status:', error);
+            setConnectionStatus('disconnected');
         }
-      } catch (error) {
-        console.error('Error checking connection:', error);
-      } finally {
-        setIsLoading(false);
-      }
     };
 
-    checkConnection();
-  }, [userId]);
+    const handleConnectionUpdate = () => {
+        checkConnectionStatus();
+    };
 
-  return (
-    <main className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-indigo-50 pt-16 pb-8 px-4">
-      <div className="max-w-4xl mx-auto space-y-8">
-        {/* Header */}
-        <div className="text-center space-y-4">
-          <div className="flex justify-center">
-            <Activity className="h-16 w-16 text-indigo-600" />
-          </div>
-          <h1 className="text-4xl font-bold text-gray-900">
-            Fitbit Steps Tracker
-          </h1>
-          <p className="text-lg text-gray-600">
-            Track your daily steps from your Fitbit device
-          </p>
-        </div>
+    if (isLoading) {
+        return (
+            <div className="min-h-screen flex items-center justify-center bg-gray-50">
+                <div className="text-center">
+                    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+                    <p className="text-gray-600">Loading BaseWalk...</p>
+                </div>
+            </div>
+        );
+    }
 
-        {/* Connection Status Message */}
-        {connectionMessage && (
-          <Card className="max-w-md mx-auto border-2">
-            <CardContent className="pt-6">
-              <div className="flex items-center gap-3">
-                {connectionMessage.includes('Success') ? (
-                  <CheckCircle className="h-6 w-6 text-green-600 flex-shrink-0" />
-                ) : (
-                  <XCircle className="h-6 w-6 text-red-600 flex-shrink-0" />
+    return (
+        <div className="min-h-screen bg-gray-50 py-8">
+            <div className="max-w-4xl mx-auto px-4">
+                <header className="text-center mb-8">
+                    <div className="flex items-center justify-center gap-3 mb-4">
+                        <Activity className="h-8 w-8 text-blue-600" />
+                        <h1 className="text-3xl font-bold text-gray-900">
+                            BaseWalk
+                            {userInfo && (
+                                <span className="text-lg font-normal text-gray-600 block">
+                                    Welcome, {userInfo.displayName}!
+                                </span>
+                            )}
+                        </h1>
+                    </div>
+                    <p className="text-gray-600">
+                        Connect your Fitbit to track daily steps in Farcaster
+                    </p>
+                </header>
+
+                <div className="grid gap-6 md:grid-cols-2">
+                    {/* Connection Status Card */}
+                    <Card>
+                        <CardHeader>
+                            <CardTitle className="flex items-center gap-2">
+                                {connectionStatus === 'connected' ? (
+                                    <>
+                                        <CheckCircle className="h-5 w-5 text-green-500" />
+                                        <span>Fitbit Connected</span>
+                                    </>
+                                ) : (
+                                    <>
+                                        <XCircle className="h-5 w-5 text-red-500" />
+                                        <span>Connect Your Fitbit</span>
+                                    </>
+                                )}
+                            </CardTitle>
+                        </CardHeader>
+                        <CardContent>
+                            {connectionStatus === 'disconnected' && (
+                                <div className="space-y-4">
+                                    <p className="text-gray-600">
+                                        Connect your Fitbit account to start tracking your daily steps
+                                        and view your fitness progress in Farcaster.
+                                    </p>
+                                    <FitbitConnectButton
+                                        userId={userId}
+                                        onConnected={handleConnectionUpdate}
+                                    />
+                                </div>
+                            )}
+                            {connectionStatus === 'connected' && (
+                                <div className="space-y-4">
+                                    <p className="text-green-600">
+                                        ✅ Your Fitbit is connected! Your steps sync automatically every 3 hours.
+                                    </p>
+                                    <FitbitConnectButton
+                                        userId={userId}
+                                        onConnected={handleConnectionUpdate}
+                                    />
+                                </div>
+                            )}
+                            {connectionStatus === 'unknown' && (
+                                <div className="space-y-4">
+                                    <div className="animate-pulse">
+                                        <div className="h-4 bg-gray-200 rounded w-3/4 mb-2"></div>
+                                        <div className="h-4 bg-gray-200 rounded w-1/2"></div>
+                                    </div>
+                                </div>
+                            )}
+                        </CardContent>
+                    </Card>
+
+                    {/* User Info Card */}
+                    <Card>
+                        <CardHeader>
+                            <CardTitle>Your Profile</CardTitle>
+                        </CardHeader>
+                        <CardContent>
+                            {userInfo ? (
+                                <div className="space-y-3">
+                                    <div className="flex items-center gap-3">
+                                        {userInfo.pfpUrl && (
+                                            <img
+                                                src={userInfo.pfpUrl}
+                                                alt="Profile"
+                                                className="w-12 h-12 rounded-full"
+                                            />
+                                        )}
+                                        <div>
+                                            <p className="font-medium">{userInfo.displayName}</p>
+                                            <p className="text-sm text-gray-500">@{userInfo.username}</p>
+                                            <p className="text-xs text-blue-600">FID: {userInfo.fid}</p>
+                                        </div>
+                                    </div>
+                                </div>
+                            ) : (
+                                <div className="text-gray-500">
+                                    <p>Guest User</p>
+                                    <p className="text-xs">Running in demo mode</p>
+                                </div>
+                            )}
+                        </CardContent>
+                    </Card>
+                </div>
+
+                {/* Steps Display */}
+                {connectionStatus === 'connected' && (
+                    <div className="mt-8">
+                        <StepsDisplay userId={userId} />
+                    </div>
                 )}
-                <p className="text-sm">{connectionMessage}</p>
-              </div>
-            </CardContent>
-          </Card>
-        )}
 
-        {/* Main Content */}
-        {isLoading ? (
-          <div className="flex justify-center items-center py-20">
-            <div className="animate-spin h-8 w-8 border-4 border-indigo-600 border-t-transparent rounded-full"></div>
-          </div>
-        ) : (
-          <div className="flex flex-col items-center space-y-8">
-            {!isConnected ? (
-              <Card className="w-full max-w-md">
-                <CardHeader>
-                  <CardTitle>Get Started</CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <p className="text-gray-600">
-                    Connect your Fitbit account to start tracking your daily
-                    steps. Your data will automatically sync every 3 hours.
-                  </p>
-                  <FitbitConnectButton
-                    userId={userId}
-                    onConnected={() => setIsConnected(true)}
-                  />
-                </CardContent>
-              </Card>
-            ) : (
-              <StepsDisplay userId={userId} />
-            )}
-
-            {/* Info Card */}
-            <Card className="w-full max-w-md bg-blue-50 border-blue-200">
-              <CardContent className="pt-6 space-y-3">
-                <h3 className="font-semibold text-gray-900">Features:</h3>
-                <ul className="space-y-2 text-sm text-gray-700">
-                  <li className="flex items-start gap-2">
-                    <CheckCircle className="h-4 w-4 text-blue-600 mt-0.5 flex-shrink-0" />
-                    <span>Secure OAuth 2.0 authentication</span>
-                  </li>
-                  <li className="flex items-start gap-2">
-                    <CheckCircle className="h-4 w-4 text-blue-600 mt-0.5 flex-shrink-0" />
-                    <span>Automatic sync every 3 hours</span>
-                  </li>
-                  <li className="flex items-start gap-2">
-                    <CheckCircle className="h-4 w-4 text-blue-600 mt-0.5 flex-shrink-0" />
-                    <span>Manual sync button for instant updates</span>
-                  </li>
-                  <li className="flex items-start gap-2">
-                    <CheckCircle className="h-4 w-4 text-blue-600 mt-0.5 flex-shrink-0" />
-                    <span>Encrypted token storage</span>
-                  </li>
-                </ul>
-              </CardContent>
-            </Card>
-          </div>
-        )}
-      </div>
-    </main>
-  );
+                {/* Features Info */}
+                <Card className="mt-8">
+                    <CardHeader>
+                        <CardTitle>Features</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                        <div className="grid gap-4 md:grid-cols-3">
+                            <div className="text-center">
+                                <div className="text-2xl mb-2">🔄</div>
+                                <h3 className="font-medium">Auto Sync</h3>
+                                <p className="text-sm text-gray-600">Steps sync every 3 hours automatically</p>
+                            </div>
+                            <div className="text-center">
+                                <div className="text-2xl mb-2">📊</div>
+                                <h3 className="font-medium">Daily Tracking</h3>
+                                <p className="text-sm text-gray-600">View your daily step count and progress</p>
+                            </div>
+                            <div className="text-center">
+                                <div className="text-2xl mb-2">🔒</div>
+                                <h3 className="font-medium">Secure</h3>
+                                <p className="text-sm text-gray-600">Your data is encrypted and secure</p>
+                            </div>
+                        </div>
+                    </CardContent>
+                </Card>
+            </div>
+        </div>
+    );
 }
